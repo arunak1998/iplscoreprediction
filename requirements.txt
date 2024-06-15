@@ -1,0 +1,5 @@
+pandas
+numpy
+Fastapi
+scikit-learn
+matplotlib
