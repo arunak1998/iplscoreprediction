@@ -3,3 +3,4 @@ numpy
 Fastapi
 scikit-learn
 matplotlib
+-e .
