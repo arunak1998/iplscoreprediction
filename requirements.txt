@@ -1,6 +1,10 @@
 pandas
 numpy
+pymongo
 Fastapi
 scikit-learn
 matplotlib
+langchain_groq
+langchain
+langsmith
 -e .

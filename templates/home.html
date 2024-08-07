@@ -3,78 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Information</title>
+    <title>IPL Prediction Winner</title>
+    <link rel="icon" href="/static/icon.ico" type="image/x-icon">
+    <style>
+        body {
+            background-image: url('/static/ipl.jpg'); /* Correct path for FastAPI static files */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #f1c40f;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            margin: 0;
+            font-size: 3em;
+            text-shadow: 3px 3px 6px #000000;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .form-container {
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.7);
+        }
+        .form-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            width: 200px;
+            font-size: 1.2em;
+            margin-right: 10px;
+            color: #f1c40f;
+        }
+        .form-group input, .form-group select {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 1.1em;
+            border: 2px solid #f1c40f;
+            border-radius: 8px;
+            background-color: #333;
+            color: #fff;
+        }
+        .form-group img {
+            margin-left: 10px;
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            border: 2px solid #f1c40f;
+        }
+        .form-group input[type="range"] {
+            width: 100%;
+        }
+        button {
+            padding: 12px;
+            font-size: 1.1em;
+            border: 2px solid #f1c40f;
+            border-radius: 8px;
+            background-color: #f1c40f;
+            color: #000;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #e1b40f;
+            border-color: #e1b40f;
+        }
+        .result, .commentary {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.9);
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.8em;
+            display: none;
+            border: 3px solid #f1c40f;
+        }
+        .result {
+            background-color: rgba(0, 128, 0, 0.7);
+        }
+        .commentary {
+            background-color: rgba(0, 0, 128, 0.7);
+        }
+        .visible {
+            display: block;
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
-    <h1>Customer Information Form</h1>
-    <form action="/predict" method="post">
-        <label for="currentscore">Current Score:</label>
-        <input type="number" id="currentscore" name="currentscore" required><br><br>
-        
-        <label for="battingteam">Batting Team:</label>
-        <select id="battingteam" name="battingteam" required>
-            
-            <!-- Add more team options here -->
-        </select><br><br>
+    <h1>IPL Prediction Winner</h1>
+    <div class="container">
+        <div class="form-container">
+            <form id="predictionForm" action="/predict" method="post">
+                <div class="form-group">
+                    <label for="currentscore">Current Score:</label>
+                    <input type="number" id="currentscore" name="currentscore" required>
+                </div>
+                <div class="form-group">
+                    <label for="battingteam">Batting Team:</label>
+                    <select id="battingteam" name="battingteam" required></select>
+                    <img id="battingteam-logo" src="" alt="Batting Team Logo">
+                </div>
+                <div class="form-group">
+                    <label for="bowlingteam">Bowling Team:</label>
+                    <select id="bowlingteam" name="bowlingteam" required></select>
+                    <img id="bowlingteam-logo" src="" alt="Bowling Team Logo">
+                </div>
+                <div class="form-group">
+                    <label for="remainingovers">Remaining Overs:</label>
+                    <input type="range" id="remainingovers" name="remainingovers" min="0" max="20" step="0.1" value="10" oninput="updateRangeValue(this.value, 'remainingovers-value')" required>
+                    <span id="remainingovers-value">10.0</span>
+                </div>
+                <div class="form-group">
+                    <label for="remainingwickets">Remaining Wickets:</label>
+                    <input type="number" id="remainingwickets" name="remainingwickets" required>
+                </div>
+                <div class="form-group">
+                    <label for="runrate">Run Rate:</label>
+                    <input type="number" step="0.1" id="runrate" name="runrate" required>
+                </div>
+                <div class="form-group">
+                    <label for="requiredrunrate">Required Run Rate:</label>
+                    <input type="number" step="0.1" id="requiredrunrate" name="requiredrunrate" required>
+                </div>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+        <div class="result" id="result-container">
+            <h2>The Prediction is <span id="result"></span></h2>
+        </div>
+        <div class="commentary" id="commentary-container">
+            Commentary: <span id="commentary"></span>
+        </div>
+    </div>
 
-        <label for="bowlingteam">Bowling Team:</label>
-        <select id="bowlingteam" name="bowlingteam" required>
-            
-            <!-- Add more team options here -->
-        </select><br><br>
-
-        <label for="remainingovers">Remaining Overs:</label>
-        <input type="number" step="0.1" id="remainingovers" name="remainingovers" required><br><br>
-        
-        <label for="remainingwickets">Remaining Wickets:</label>
-        <input type="number" id="remainingwickets" name="remainingwickets" required><br><br>
-        
-        <label for="runrate">Run Rate:</label>
-        <input type="number" step="0.1" id="runrate" name="runrate" required><br><br>
-        
-        <label for="requiredrunrate">Required Run Rate:</label>
-        <input type="number" step="0.1" id="requiredrunrate" name="requiredrunrate" required><br><br>
-        
-        <button type="submit">Submit</button>
-    </form>
-    
-    <h2>The Prediction is {{result}}</h2>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function() {
-            $.ajax({
-                url: 'http://127.0.0.1:8000/get_teams',
-                type: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    $.each(data, function(index, teams) {
-                        $('#battingteam').append('<option value="' + teams + '">' + teams + '</option>');
-                    });
-                },
-                error: function() {
-                    console.error('Error fetching teams  from list');
-                }
-            });
-        });
-    </script>
-    <script>
-        $(document).ready(function() {
-            $.ajax({
-                url: 'http://127.0.0.1:8000/get_teams',
-                type: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    $.each(data, function(index, teams) {
-                        $('#bowlingteam').append('<option value="' + teams + '">' + teams + '</option>');
-                    });
-                },
-                error: function() {
-                    console.error('Error fetching teams  from list');
-                }
-            });
-        });
-    </script>
-     </script>
+        const teamLogos = {
+            "Chennai Super Kings": "Chennai Super Kings.webp",
+            "Delhi Capitals": "Delhi Capitals.webp",
+            "Kolkata Knight Riders": "Kolkata Knight Riders.webp",
+            "Mumbai Indians": "Mumbai Indians.webp",
+            "Punjab Kings": "Punjab Kings.webp",
+            "Rajasthan Royals": "Rajasthan Royals.webp",
+            "Royal Challengers Bangalore": "Royal Challengers Bangalore.webp",
+            "Sunrisers Hyderabad": "Sunrisers Hyderabad.webp",
+            "Gujarat Titans": "Gujarat Titans.webp",
+            "Lucknow Super Giants": "Lucknow Super Giants.webp"
+        };
 
+        function updateRangeValue(value, elementId) {
+            document.getElementById(elementId).innerText = value;
+        }
+
+        function updateTeamLogo(team, logoElementId) {
+            const logoPath = `/static/${teamLogos[team]}`;
+            document.getElementById(logoElementId).src = logoPath;
+        }
+
+        $(document).ready(function() {
+            $.ajax({
+                url: 'http://127.0.0.1:8000/get_teams',
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    $.each(data, function(index, team) {
+                        $('#battingteam').append(`<option value="${team}">${team}</option>`);
+                        $('#bowlingteam').append(`<option value="${team}">${team}</option>`);
+                    });
+                    
+                    // Set initial logos
+                    const initialBattingTeam = $('#battingteam').val();
+                    const initialBowlingTeam = $('#bowlingteam').val();
+                    updateTeamLogo(initialBattingTeam, 'battingteam-logo');
+                    updateTeamLogo(initialBowlingTeam, 'bowlingteam-logo');
+                },
+                error: function() {
+                    console.error('Error fetching teams from list');
+                }
+            });
+
+            $('#battingteam').change(function() {
+                const selectedTeam = $(this).val();
+                updateTeamLogo(selectedTeam, 'battingteam-logo');
+            });
+
+            $('#bowlingteam').change(function() {
+                const selectedTeam = $(this).val();
+                updateTeamLogo(selectedTeam, 'bowlingteam-logo');
+            });
+
+            $('#predictionForm').submit(function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                $.ajax({
+                    url: '/predict',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log('Response:', response);
+                        $('#result').text(response.result);
+                        $('#commentary').text(response.commantry_data);
+                        $('#result-container').addClass('visible');
+                        $('#commentary-container').addClass('visible');
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', error);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

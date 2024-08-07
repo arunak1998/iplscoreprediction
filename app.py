@@ -3,14 +3,14 @@ from typing import List
 import uvicorn
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-
+from src.llmcall.main import createchain
 from src.pipelines.prediction_pipeline import PredictData,Matchstat
 from fastapi import Request,Form
-
-
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 # Initialize the FastAPI app
 app = FastAPI()
-
+app.mount("/static", StaticFiles(directory="images"), name="static")
 templates = Jinja2Templates(directory="templates")
 @app.get("/predict", response_class=HTMLResponse)
 async def get_predict(request: Request):
@@ -44,10 +44,16 @@ async def post_predict(
        result=battingteam
    else:
        result=bowlingteam
+   input_data=pred_df.to_dict(orient="records")[0]
+   input_data['Winner_prediction']=result
+   print(input_data)
+   
+   commantry_data=await createchain(input_data)
+   
 
     
-   return templates.TemplateResponse("home.html", {"request": request, "result": result})
-       
+  
+   return JSONResponse(content={"result": result, "commantry_data": commantry_data})
 
 teams = [
     'Kolkata Knight Riders', 'Chennai Super Kings', 'Delhi Capitals',
