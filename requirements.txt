@@ -9,4 +9,5 @@ langchain_groq
 langchain
 langsmith
 dill
+jinja2
 -e .
