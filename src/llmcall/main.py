@@ -5,8 +5,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 import os
 from langsmith import traceable
-from dotenv import load_dotenv
-load_dotenv()
+
 
 groq_api_key=os.getenv('GROQ_API_KEY')
 

@@ -1,7 +1,6 @@
 import pymongo
 import os
-from dotenv import load_dotenv
-load_dotenv()
+
 
 mongo_connection_string=os.getenv('MONGO_DB')
 def readmango(team1,team2):
