@@ -10,4 +10,5 @@ langchain
 langsmith
 dill
 jinja2
+python-multipart
 -e .
