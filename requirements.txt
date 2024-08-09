@@ -11,4 +11,5 @@ langsmith
 dill
 jinja2
 python-multipart
+xgboost
 -e .
