@@ -3,7 +3,7 @@ numpy
 pymongo
 Fastapi
 uvicorn
-scikit-learn
+scikit-learn==1.5.0
 matplotlib
 langchain_groq
 langchain
