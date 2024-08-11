@@ -7,7 +7,7 @@
     <link rel="icon" href="/static/icon.ico" type="image/x-icon">
     <style>
         body {
-            background-image: url('/static/ipl.jpg'); /* Correct path for FastAPI static files */
+            background-image: url('/static/ipl.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -94,6 +94,7 @@
             font-size: 1.8em;
             display: none;
             border: 3px solid #f1c40f;
+            animation: fadeIn 1s ease-in-out;
         }
         .result {
             background-color: rgba(0, 128, 0, 0.7);
@@ -103,19 +104,26 @@
         }
         .visible {
             display: block;
-            animation: fadeIn 1s ease-in-out;
         }
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .blinking {
+            animation: blink 1s step-start infinite;
+        }
     </style>
 </head>
 <body>
-    <h1>IPL Prediction Winner</h1>
+    <h1>IPL Winner Prediction</h1>
     <div class="container">
         <div class="form-container">
-            <form id="predictionForm" action="/predict" method="post">
+            <form id="predictionForm">
                 <div class="form-group">
                     <label for="currentscore">Current Score:</label>
                     <input type="number" id="currentscore" name="currentscore" required>
@@ -132,8 +140,8 @@
                 </div>
                 <div class="form-group">
                     <label for="remainingovers">Remaining Overs:</label>
-                    <input type="range" id="remainingovers" name="remainingovers" min="0" max="20" step="0.1" value="10" oninput="updateRangeValue(this.value, 'remainingovers-value')" required>
-                    <span id="remainingovers-value">10.0</span>
+                    <input type="range" id="remainingovers" name="remainingovers" min="0" max="20" step="0.1" value="0" oninput="updateOvers(this.value); updateRunRate();" required>
+                    <span id="remainingovers-value">0.0</span>
                 </div>
                 <div class="form-group">
                     <label for="remainingwickets">Remaining Wickets:</label>
@@ -141,20 +149,20 @@
                 </div>
                 <div class="form-group">
                     <label for="runrate">Run Rate:</label>
-                    <input type="number" step="0.1" id="runrate" name="runrate" required>
+                    <input type="number" step="0.1" id="runrate" name="runrate" readonly>
                 </div>
                 <div class="form-group">
                     <label for="requiredrunrate">Required Run Rate:</label>
                     <input type="number" step="0.1" id="requiredrunrate" name="requiredrunrate" required>
                 </div>
-                <button type="submit">Submit</button>
+                <button type="button" id="submitButton">Submit</button>
             </form>
         </div>
-        <div class="result" id="result-container">
+        <div class="result blinking" id="result-container">
             <h2>The Prediction is <span id="result"></span></h2>
         </div>
         <div class="commentary" id="commentary-container">
-            Commentary: <span id="commentary"></span>
+            CommentaryUpdate: <span id="commentary"></span>
         </div>
     </div>
 
@@ -172,66 +180,135 @@
             "Gujarat Titans": "Gujarat Titans.webp",
             "Lucknow Super Giants": "Lucknow Super Giants.webp"
         };
+        function updateCommentary(commentaryText) {
+    const commentarySpan = document.getElementById('commentary');
 
-        function updateRangeValue(value, elementId) {
-            document.getElementById(elementId).innerText = value;
+    // Check if commentaryText is valid
+    if (!commentaryText || typeof commentaryText !== 'string') {
+        commentarySpan.innerHTML = '<p>No commentary available.</p>'; // Provide a fallback message
+        return;
+    }
+
+    // Function to split text based on full stops and format it
+    function formatText(text) {
+        // Split the text at each full stop, trimming any extra spaces
+        const sentences = text.split('.').map(sentence => sentence.trim()).filter(sentence => sentence.length > 0);
+
+        // Generate HTML for each sentence
+        return sentences.map(sentence => `<p>${sentence}.</p>`).join('');
+    }
+
+    // Apply formatting to the provided commentary text
+    let formattedCommentary = formatText(commentaryText);
+
+    // Set the formatted commentary to the span
+    commentarySpan.innerHTML = formattedCommentary;
+}
+
+        function getRoundedValue(value) {
+            const floorValue = Math.floor(value);
+            const decimalPart = (value - floorValue).toFixed(1);
+            if (decimalPart < 0.5) {
+                return floorValue + parseFloat(decimalPart);
+            } else {
+                return Math.round(value * 10) / 10;
+            }
         }
 
-        function updateTeamLogo(team, logoElementId) {
-            const logoPath = `/static/${teamLogos[team]}`;
-            document.getElementById(logoElementId).src = logoPath;
+        function updateOvers(value) {
+    let adjustedValue;
+
+    // Convert to float and round to nearest tenth
+    value = parseFloat(value).toFixed(1);
+
+    if (value < 1) {
+        // For values below 1, limit to 0.5
+        adjustedValue = value <= 0.5 ? value : 0.5;
+    } else {
+        // For values 1 and above, increment normally but skip 0.6-0.9
+        let integerPart = Math.floor(value); // Get the integer part
+        let decimalPart = parseFloat(value) - integerPart; // Get the decimal part
+        
+        if (decimalPart > 0.5) {
+            adjustedValue = (integerPart + 1).toFixed(1); // Jump to next integer
+        } else {
+            adjustedValue = value; // Keep the decimal part if <= 0.5
+        }
+    }
+
+    document.getElementById('remainingovers').value = adjustedValue;
+    document.getElementById('remainingovers-value').innerText = adjustedValue;
+}
+        function updateRunRate() {
+            const currentScore = parseFloat(document.getElementById('currentscore').value) || 0;
+            const remainingOvers = parseFloat(document.getElementById('remainingovers').value) || 0;
+            if (remainingOvers > 0) {
+                const runRate = currentScore / (20 - remainingOvers);
+                document.getElementById('runrate').value = runRate.toFixed(1);
+            } else {
+                document.getElementById('runrate').value = 'N/A';
+            }
         }
 
-        $(document).ready(function() {
-            $.ajax({
-                url: '/get_teams', 
-                type: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    $.each(data, function(index, team) {
-                        $('#battingteam').append(`<option value="${team}">${team}</option>`);
-                        $('#bowlingteam').append(`<option value="${team}">${team}</option>`);
-                    });
-                    
-                    // Set initial logos
-                    const initialBattingTeam = $('#battingteam').val();
-                    const initialBowlingTeam = $('#bowlingteam').val();
-                    updateTeamLogo(initialBattingTeam, 'battingteam-logo');
-                    updateTeamLogo(initialBowlingTeam, 'bowlingteam-logo');
-                },
-                error: function() {
-                    console.error('Error fetching teams from list');
-                }
+        function updateTeamLogo(teamName, logoId) {
+            const logoPath = teamLogos[teamName] ? `/static/${teamLogos[teamName]}` : '';
+            document.getElementById(logoId).src = logoPath;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const teams = Object.keys(teamLogos);
+            teams.forEach(team => {
+                document.getElementById('battingteam').add(new Option(team, team));
+                document.getElementById('bowlingteam').add(new Option(team, team));
             });
 
-            $('#battingteam').change(function() {
-                const selectedTeam = $(this).val();
-                updateTeamLogo(selectedTeam, 'battingteam-logo');
+            const initialBattingTeam = document.getElementById('battingteam').value;
+            const initialBowlingTeam = document.getElementById('bowlingteam').value;
+            updateTeamLogo(initialBattingTeam, 'battingteam-logo');
+            updateTeamLogo(initialBowlingTeam, 'bowlingteam-logo');
+
+            document.getElementById('battingteam').addEventListener('change', function() {
+                updateTeamLogo(this.value, 'battingteam-logo');
             });
 
-            $('#bowlingteam').change(function() {
-                const selectedTeam = $(this).val();
-                updateTeamLogo(selectedTeam, 'bowlingteam-logo');
+            document.getElementById('bowlingteam').addEventListener('change', function() {
+                updateTeamLogo(this.value, 'bowlingteam-logo');
             });
 
-            $('#predictionForm').submit(function(event) {
-                event.preventDefault(); // Prevent default form submission
+            document.getElementById('currentscore').addEventListener('input', updateRunRate);
 
-                $.ajax({
-                    url: '/predict',
-                    type: 'POST',
-                    data: $(this).serialize(),
-                    dataType: 'json',
-                    success: function(response) {
-                        console.log('Response:', response);
-                        $('#result').text(response.result);
-                        $('#commentary').text(response.commantry_data);
-                        $('#result-container').addClass('visible');
-                        $('#commentary-container').addClass('visible');
+            document.getElementById('submitButton').addEventListener('click', function() {
+                const formData = {
+                    currentscore: document.getElementById('currentscore').value,
+                    battingteam: document.getElementById('battingteam').value,
+                    bowlingteam: document.getElementById('bowlingteam').value,
+                    remainingovers: document.getElementById('remainingovers').value,
+                    remainingwickets: document.getElementById('remainingwickets').value,
+                    runrate: document.getElementById('runrate').value,
+                    requiredrunrate: document.getElementById('requiredrunrate').value
+                };
+
+                fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
                     },
-                    error: function(xhr, status, error) {
-                        console.error('Error:', error);
-                    }
+                    body: new URLSearchParams(formData).toString()
+                })
+                .then(response => response.json())
+                .then(data => {
+                   // Check if the necessary fields exist in the data
+                    const resultText = data.result || 'No result available.';
+                    const commentaryText = data.commantry_data || 'No commentary available.';
+
+                    // Update the result and commentary sections based on API data
+                    document.getElementById('result').textContent = resultText;
+                    document.getElementById('commentary').textContent = commentaryText; // Update commentary using the function
+                    document.getElementById('result-container').classList.add('visible');
+                    document.getElementById('commentary-container').classList.add('visible');
+                })
+                .catch(error => {
+                    alert('An error occurred: ' + error);
                 });
             });
         });
